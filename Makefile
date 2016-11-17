@@ -9,13 +9,15 @@ LDFLAGS= -Wall -L$(SRCDIR) -L$(TESTDIR)`sdl2-config --libs` -lSDL2_gfx -fopenmp 
 SRC=template.c
 OBJ=$(SRC:.c=.o)
 
-EXEC=tests
+EXEC=tests benchmarks
 
 all:$(EXEC)
 
 tests: tests.o $(OBJ)
 	$(CC) -o $@ $^ ${LDFLAGS}
-	rm -rf *.o
+
+benchmarks: benchmarks.o $(OBJ)
+	$(CC) -o $@ $^ ${LDFLAGS}
 
 %.o: %.c
 	$(CC) -o $@ -c $< $(CFLAGS)
