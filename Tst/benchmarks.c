@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
+#include "lmts.h"
 #include "template.h"
 
 void benchLoadFree()
@@ -21,13 +22,21 @@ void benchLoadFree()
   assert (dp != NULL);
   struct dirent *ep;
 
+  int r = 1.0;
+
   while ((ep = readdir(dp)))
   {
     len = strlen(ep->d_name);
-    if (strcmp(ep->d_name + (len-4), ".dat") == 0)
+    if (strcmp(ep->d_name + (len-4), ".fmr") == 0)
     {
       snprintf(filePath, 300, "%s/%s", dirPath, ep->d_name);
       T_load(&t, filePath);
+      float distances[t.nbMinutiae * t.nbMinutiae];
+      int nbNeighbours[t.nbMinutiae];
+      T_computeDistances(&t, distances, r, nbNeighbours);
+      LMTS lmts[t.nbMinutiae];
+      LMTS_buildAll(lmts, &t, r, distances, nbNeighbours);
+      LMTS_free(t.nbMinutiae, lmts);
       T_free(&t);
     }
   }

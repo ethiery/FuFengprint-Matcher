@@ -54,6 +54,15 @@ int T_load(T *t, char *filePath);
  */
 void printLoadError(FILE *stream, int err);
 
+/*
+ * Computes the square (in cm²) of the distances between all pairs of minutiae
+ * in the `t` and stores them in `distances`.
+ * Additionnaly in the same pass, count for each minutia the number of neighbouring
+ * minutiae closer than the threshold `r` (in cm) and stores them in `nbNeighbours`
+ */
+void T_computeDistances(T* t, float *distances, float r, int *nbNeighbours);
+
+
 /**
  * Releases the resources associated with a template object
  * To be called after every successful call to T_load

@@ -1,6 +1,6 @@
 #include <malloc.h>
 // #include <stdio.h>
-// #include <stdlib.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "template.h"
@@ -74,6 +74,36 @@ void printLoadError(FILE *stream, int err)
     fprintf(stderr, "%s\n", T_loadErrorMessages[err]);
 }
 
+/*
+ * Computes the square (in cm²) of the distances between all pairs of minutiae
+ * in the `t` and stores them in `distances`.
+ * Additionnaly in the same pass, count for each minutia the number of neighbouring
+ * minutiae closer than the threshold `r` (in cm) and stores them in `nbNeighbours`
+ */
+void T_computeDistances(T* t, float *distances, float r, int *nbNeighbours)
+{
+  int n = t->nbMinutiae;
+  float dx, dy;
+  float hFactor = 1.0 / t->hDensity;
+  float vFactor = 1.0 / t->vDensity;
+  float r2 = r * r;
+  int isNeighbour;
+
+  for (int i = 0; i < n; i++)
+  {
+    nbNeighbours[i] = 0;
+    distances[i * n + i] = 0;
+    for (int j = 0; j < i; j++)
+    {
+      dx = (t->x[i] - t->x[j]) * hFactor;
+      dy = (t->y[i] - t->y[j]) * vFactor;
+      distances[i * n + j] = distances[j * n + i] = dx*dx + dy*dy;
+      isNeighbour = (distances[i * n + j] < r2) ? 1 : 0;
+      nbNeighbours[i] += isNeighbour;
+      nbNeighbours[j] += isNeighbour;
+    }
+  }
+}
 
 /**
  * Releases the resources associated with a template object

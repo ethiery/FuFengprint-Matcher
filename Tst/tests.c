@@ -4,6 +4,9 @@
 
 #include "template.h"
 
+#ifndef EPS
+  #define EPS 1e-5
+#endif
 
 void testValidISO2005Load()
 {
@@ -73,6 +76,44 @@ void testUnsuppportedFormat()
   assert(ret == 3);
 }
 
+void testComputeDistances()
+{
+  printf("Computing distances between the minutiae of a template: ");
+
+  T template;
+  template.hDensity = 197;
+  template.vDensity = 197;
+  template.nbMinutiae = 3;
+  template.x = (unsigned short *) malloc(template.nbMinutiae * sizeof(unsigned short));
+  template.y = (unsigned short *) malloc(template.nbMinutiae * sizeof(unsigned short));
+
+  for (int i = 0; i < 3; i++)
+  {
+    template.x[i] = i*10;
+    template.y[i] = 10 + i*10;
+  }
+
+  float *distances = (float *)malloc(3 * 3 *sizeof(float));
+  int nbNeighbours[3];
+  float r = 20.0 / 197;
+  T_computeDistances(&template, (float *)distances, r, (int *)nbNeighbours);
+
+  for (int i = 0; i < 3; i++)
+  {
+    for (int j = 0; j < 3; j++)
+    {
+      assert(abs(distances[i * 3 + j] - 2 * ((j-i)*10/197.0) * ((j-i)*10/197.0)) < EPS);
+    }
+  }
+  assert(nbNeighbours[0] == 1);
+  assert(nbNeighbours[1] == 2);
+  assert(nbNeighbours[2] == 1);
+
+  printf("ok\n");
+
+  free(template.x);
+  free(template.y);
+}
 
 int main(int argc, char** argv)
 {
@@ -80,5 +121,6 @@ int main(int argc, char** argv)
   testInexistantLoad();
   testInvalidISO2005Load();
   testUnsuppportedFormat();
+  testComputeDistances();
   return EXIT_SUCCESS;
 }
