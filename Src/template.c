@@ -165,7 +165,8 @@ int T_loadISO2005(T *t, FILE *f)
   t->height = (buffer[8] << 8) + buffer[9];
   t->hDensity = (buffer[10] << 8) + buffer[11];
   t->vDensity = (buffer[12] << 8) + buffer[13];
-  // Number of fingerprint (buffer[14-15])
+  // Number of fingerprint (buffer[14])
+  // padding zero (buffer[15])
   // First finger position (buffer[16])
   // padding zero (buffer[17])
   t->quality = buffer[18];
