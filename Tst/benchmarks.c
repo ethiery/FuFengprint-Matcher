@@ -11,10 +11,14 @@
 
 void benchLoadFree()
 {
+  printf("For accurate measurements, don't forget to disable powersave:\n"
+    "sudo cpufreq-set -g performance\n\n");
+
   char dirPath[] = "./Data/validTemplates";
   struct timeval start, stop;
   gettimeofday(&start, NULL);
 
+  int nbTemplates = 0;
   T t;
   char filePath[300];
   int len;
@@ -38,14 +42,16 @@ void benchLoadFree()
       LMTS_buildAll(lmts, &t, r, distances, nbNeighbours);
       LMTS_free(t.nbMinutiae, lmts);
       T_free(&t);
+      nbTemplates += 1;
     }
   }
   closedir (dp);
 
 
   gettimeofday(&stop, NULL);
-  printf("Scanning a dir of 1000 templates and load+free each of them: %.3f ms per template\n",
-    (stop.tv_sec - start.tv_sec) + 1e-6 * (stop.tv_usec - start.tv_usec));
+  double ms = 1e3 * (stop.tv_sec - start.tv_sec) + 1e-3 * (stop.tv_usec - start.tv_usec);
+  printf("Scanning a dir of %d templates and load+free each of them: %.3f ms per template\n",
+    nbTemplates, ms / nbTemplates);
 }
 
 int main(int argc, char **argv)

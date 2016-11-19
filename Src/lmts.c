@@ -17,9 +17,9 @@
  */
 void LMTS_buildAll(LMTS *lmts, T* t, float r, float *distances, int *nbNeighbours)
 {
-  int r2 = r * r;
+  float r2 = r * r;
   int n = t->nbMinutiae;
-  int p, o;
+  float p, o;
 
   for (int i = 0; i < n; i++)
   {
