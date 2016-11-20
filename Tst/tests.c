@@ -1,8 +1,10 @@
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "lmts.h"
+#include "pair.h"
 #include "template.h"
 
 #ifndef EPS
@@ -10,7 +12,7 @@
 #endif
 
 #ifndef M_PI
-  #define M_PI 3.14159265358979323846
+  #define M_PI 3.141592653589793
 #endif
 
 
@@ -103,9 +105,10 @@ void initTestTemplate(T *template)
 
 void initTestDistances(float *distances)
 {
+  float sqrt2 = sqrtf(2);
   for (int i = 0; i < 3; i++)
     for (int j = 0; j < 3; j++)
-      distances[i * 3 + j]  = 2 * ((j-i)*10/197.0) * ((j-i)*10/197.0);
+      distances[i * 3 + j]  = sqrt2 * ((j-i)*10/197.0);
 }
 
 void initTestNbNeighbours(int *nbNeighbours)
@@ -132,28 +135,27 @@ void initTestLMTS(LMTS *lmts)
   lmts[2].nbMinutiae = 1;
   for (int i = 0; i < 3; i++)
   {
-    lmts[i].r = (float *) malloc(lmts[i].nbMinutiae * sizeof(float));
-    lmts[i].p = (float *) malloc(lmts[i].nbMinutiae * sizeof(float));
-    lmts[i].o = (float *) malloc(lmts[i].nbMinutiae * sizeof(float));
+    lmts[i].r = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
+    lmts[i].a = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
+    lmts[i].o = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
   }
 
-  int d = 2 * (10/197.0) * (10/197.0);
-  lmts[0].r[0] = d;
-  lmts[1].r[0] = d;
-  lmts[1].r[1] = d;
-  lmts[2].r[0] = d;
 
-  lmts[0].p[0] = M_PI / 4;
-  lmts[1].p[0] = - 3 * M_PI / 4;
-  lmts[1].p[1] = M_PI / 4;
-  lmts[2].p[0] = - 3 * M_PI / 4;
+  short r = 90; // (short)(128 * sqrtf(2) * (10/20.0));
+  lmts[0].r[0] = r;
+  lmts[1].r[0] = r;
+  lmts[1].r[1] = r;
+  lmts[2].r[0] = r;
 
-  lmts[0].o[0] = M_PI / 4;
-  lmts[1].o[0] = - 3 * M_PI / 4;
-  lmts[1].o[1] = M_PI / 4;
-  lmts[2].o[0] = - 3 * M_PI / 4;
+  lmts[0].a[0] = 32;
+  lmts[1].a[0] = 96;
+  lmts[1].a[1] = 224;
+  lmts[2].a[0] = 32;
 
-
+  lmts[0].o[0] = 32;
+  lmts[1].o[0] = 96;
+  lmts[1].o[1] = 96;
+  lmts[2].o[0] = 160;
 }
 
 void testComputeDistances()
@@ -210,15 +212,62 @@ void testLMTSbuildAll()
     assert(lmts[i].nbMinutiae == expectedLmts[i].nbMinutiae);
     for (int j = 0; j < lmts[i].nbMinutiae; j++)
     {
-      assert(abs(lmts[i].r[j] - expectedLmts[i].r[j]) < EPS);
-      assert(abs(lmts[i].p[j] - expectedLmts[i].p[j]) < EPS);
-      assert(abs(lmts[i].o[j] - expectedLmts[i].o[j]) < EPS);
+      assert(lmts[i].r[j] == expectedLmts[i].r[j]);
+      assert(lmts[i].a[j] == expectedLmts[i].a[j]);
+      assert(lmts[i].o[j] == expectedLmts[i].o[j]);
     }
   }
 
   T_free(&template);
   LMTS_free(n, lmts);
   LMTS_free(n, expectedLmts);
+  printf("ok\n");
+}
+
+void testPairBuildAll()
+{
+  printf("Computing all pairs of LMTS between 2 templates: ");
+
+  LMTS lmts[2];
+  lmts[0].nbMinutiae = 2;
+  lmts[1].nbMinutiae = 3;
+  for (int i = 0; i < 2; i++)
+  {
+    lmts[i].r = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
+    lmts[i].a = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
+    lmts[i].o = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
+  }
+
+  lmts[0].r[0] = 100;
+  lmts[0].a[0] = 0;
+  lmts[0].o[0] = 10;
+
+  lmts[0].r[1] = 20;
+  lmts[0].a[1] = 200;
+  lmts[0].o[1] = 250;
+
+  lmts[1].r[0] = 50;
+  lmts[1].a[0] = 0;
+  lmts[1].o[0] = 10;
+
+  lmts[1].r[1] = 100;
+  lmts[1].a[1] = 216;
+  lmts[1].o[1] = 10;
+
+  lmts[1].r[2] = 100;
+  lmts[1].a[2] = 0;
+  lmts[1].o[2] = 30;
+
+  Pair pairs[lmts[0].nbMinutiae * lmts[1].nbMinutiae];
+  int nbPairs;
+
+  Pair_buildAll(pairs, &nbPairs, &lmts[0], &lmts[1], 0.1, 1e-4);
+
+  assert(nbPairs == 3);
+  assert(pairs[0].m1 == 0 && pairs[0].m2 == 0 && fabs(pairs[0].sim - expf(-5)) < EPS);
+  assert(pairs[1].m1 == 0 && pairs[1].m2 == 1 && fabs(pairs[1].sim - expf(-4)) < EPS);
+  assert(pairs[2].m1 == 0 && pairs[2].m2 == 2 && fabs(pairs[2].sim - expf(-2)) < EPS);
+
   printf("ok\n");
 }
 
@@ -230,5 +279,6 @@ int main(int argc, char** argv)
   testUnsuppportedFormat();
   testComputeDistances();
   testLMTSbuildAll();
+  testPairBuildAll();
   return EXIT_SUCCESS;
 }

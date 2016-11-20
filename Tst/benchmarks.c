@@ -8,50 +8,90 @@
 
 #include "lmts.h"
 #include "template.h"
+#include "pair.h"
 
 void benchLoadFree()
 {
   printf("For accurate measurements, don't forget to disable powersave:\n"
     "sudo cpufreq-set -g performance\n\n");
 
-  char dirPath[] = "./Data/validTemplates";
   struct timeval start, stop;
   gettimeofday(&start, NULL);
 
-  int nbTemplates = 0;
-  T t;
-  char filePath[300];
-  int len;
-  DIR *dp = opendir (dirPath);
-  assert (dp != NULL);
-  struct dirent *ep;
 
-  int r = 1.0;
+  int nbMatches = 0;
+  float r = 0.3;
 
-  while ((ep = readdir(dp)))
+  char dirPath[] = "./Data/validTemplates";
+  DIR *probeDir = opendir (dirPath);
+  assert(probeDir != NULL);
+  struct dirent *probeDirEntry;
+  T probe;
+  char probeFilePath[300];
+
+  while ((probeDirEntry = readdir(probeDir)) && nbMatches < 10000)
   {
-    len = strlen(ep->d_name);
-    if (strcmp(ep->d_name + (len-4), ".fmr") == 0)
+    // Preparing probe
+    if (strcmp(probeDirEntry->d_name + (strlen(probeDirEntry->d_name)-4), ".fmr") == 0)
     {
-      snprintf(filePath, 300, "%s/%s", dirPath, ep->d_name);
-      T_load(&t, filePath);
-      float distances[t.nbMinutiae * t.nbMinutiae];
-      int nbNeighbours[t.nbMinutiae];
-      T_computeDistances(&t, distances, r, nbNeighbours);
-      LMTS lmts[t.nbMinutiae];
-      LMTS_buildAll(lmts, &t, r, distances, nbNeighbours);
-      LMTS_free(t.nbMinutiae, lmts);
-      T_free(&t);
-      nbTemplates += 1;
+      snprintf(probeFilePath, 300, "%s/%s", dirPath, probeDirEntry->d_name);
+      T_load(&probe, probeFilePath);
+
+      float probeDist[probe.nbMinutiae * probe.nbMinutiae];
+      int probeNbNeighb[probe.nbMinutiae];
+      LMTS probeLmts[probe.nbMinutiae];
+      T_computeDistances(&probe, probeDist, r, probeNbNeighb);
+      LMTS_buildAll(probeLmts, &probe, r, probeDist, probeNbNeighb);
+
+      // Goes through candidates one by one
+      DIR *candidateDir = opendir (dirPath);
+      assert(candidateDir != NULL);
+      struct dirent *candidateDirEntry;
+      T candidate;
+      char candidateFilePath[300];
+
+      while ((candidateDirEntry = readdir(candidateDir)))
+      {
+        // Preparing candidate
+        if (strcmp(candidateDirEntry->d_name + (strlen(candidateDirEntry->d_name)-4), ".fmr") == 0)
+        {
+          snprintf(candidateFilePath, 300, "%s/%s", dirPath, candidateDirEntry->d_name);
+          T_load(&candidate, candidateFilePath);
+
+          float candidateDist[candidate.nbMinutiae * candidate.nbMinutiae];
+          int candidateNbNeighb[candidate.nbMinutiae];
+          LMTS candidateLmts[candidate.nbMinutiae];
+          T_computeDistances(&candidate, candidateDist, r, candidateNbNeighb);
+          LMTS_buildAll(candidateLmts, &candidate, r, candidateDist, candidateNbNeighb);
+
+          // Match
+          Pair pairs[probe.nbMinutiae * candidate.nbMinutiae];
+          int nbPairs;
+          for (int c1 = 0; c1 < probe.nbMinutiae; c1++)
+            for (int c2 = 0; c2 < candidate.nbMinutiae; c2++)
+            {
+                Pair_buildAll(pairs, &nbPairs, probeLmts+c1, candidateLmts+c2, 0.1, 1e-3);
+            }
+
+
+          LMTS_free(candidate.nbMinutiae, candidateLmts);
+          T_free(&candidate);
+
+          nbMatches++;
+        }
+      }
+
+      closedir(candidateDir);
+      LMTS_free(probe.nbMinutiae, probeLmts);
+      T_free(&probe);
     }
   }
-  closedir (dp);
-
+  closedir(probeDir);
 
   gettimeofday(&stop, NULL);
   double ms = 1e3 * (stop.tv_sec - start.tv_sec) + 1e-3 * (stop.tv_usec - start.tv_usec);
-  printf("Scanning a dir of %d templates and load+free each of them: %.3f ms per template\n",
-    nbTemplates, ms / nbTemplates);
+  printf("Performing %d matches: %.3f ms per match\n",
+    nbMatches, ms / nbMatches);
 }
 
 int main(int argc, char **argv)
