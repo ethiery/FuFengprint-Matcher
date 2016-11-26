@@ -7,13 +7,14 @@
 #include <dirent.h>
 
 #include "lmts.h"
+#include "mtm.h"
 #include "template.h"
 #include "pair.h"
 
 void benchLoadFree()
 {
   printf("For accurate measurements, don't forget to disable powersave:\n"
-    "sudo cpufreq-set -g performance\n\n");
+    "sudo cpufreq-set -g performance\n\nStarting benchmarking, it might take a while:\n");
 
   struct timeval start, stop;
   gettimeofday(&start, NULL);
@@ -66,14 +67,21 @@ void benchLoadFree()
 
           // Match
           Pair pairs[probe.nbMinutiae * candidate.nbMinutiae];
-          int nbPairs;
+          int nbPairs, nMax;
+          float antiCompilerSimplification = 1;
           for (int c1 = 0; c1 < probe.nbMinutiae; c1++)
             for (int c2 = 0; c2 < candidate.nbMinutiae; c2++)
             {
-                Pair_buildAll(pairs, &nbPairs, probeLmts+c1, candidateLmts+c2, 0.1, 1e-3);
+              Pair_buildAll(pairs, &nbPairs, probeLmts+c1, candidateLmts+c2, 0.05, 1e-2);
+
+              nMax = 3 * (probeLmts[c1].nbMinutiae < candidateLmts[c2].nbMinutiae ? probeLmts[c1].nbMinutiae : candidateLmts[c2].nbMinutiae);
+              if (nbPairs > nMax) {
+                qsort(pairs, nbPairs, sizeof(Pair), Pair_cmp);
+                nbPairs = nMax;
+              }
+              antiCompilerSimplification += MTMscore(nbPairs, pairs, probeLmts+c1, candidateLmts+c2, 0.033, 2, 1e-2, 100, probe.nbMinutiae * candidate.nbMinutiae);
             }
-
-
+          assert(antiCompilerSimplification != 0);
           LMTS_free(candidate.nbMinutiae, candidateLmts);
           T_free(&candidate);
 

@@ -9,7 +9,7 @@
  * Second index m2 is the index of a neighbouring minutia in another LMTS l2 of another template.
  *
  * The similarity score of a minutia pair (m1, m2) is defined as:
- * sim(m1, m2) = exp(- alpha * (|l1.r[m1] - l2.r[m2]| + |l1.p[m1] - l2.p[m2]| + |l1.o[m1] - l2.o[m2]|))
+ * sim(m1, m2) = exp(- alpha * ||vec(c1m1) - vec(c2m2)||1)
  *
  * where alpha is a manually set positive parameters
  *

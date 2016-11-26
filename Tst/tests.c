@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "lmts.h"
+#include "mtm.h"
 #include "pair.h"
 #include "template.h"
 
@@ -128,36 +129,6 @@ int initTestNbMinutiae()
   return 3;
 }
 
-void initTestLMTS(LMTS *lmts)
-{
-  lmts[0].nbMinutiae = 1;
-  lmts[1].nbMinutiae = 2;
-  lmts[2].nbMinutiae = 1;
-  for (int i = 0; i < 3; i++)
-  {
-    lmts[i].r = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
-    lmts[i].a = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
-    lmts[i].o = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
-  }
-
-
-  short r = 90; // (short)(128 * sqrtf(2) * (10/20.0));
-  lmts[0].r[0] = r;
-  lmts[1].r[0] = r;
-  lmts[1].r[1] = r;
-  lmts[2].r[0] = r;
-
-  lmts[0].a[0] = 32;
-  lmts[1].a[0] = 96;
-  lmts[1].a[1] = 224;
-  lmts[2].a[0] = 32;
-
-  lmts[0].o[0] = 32;
-  lmts[1].o[0] = 96;
-  lmts[1].o[1] = 96;
-  lmts[2].o[0] = 160;
-}
-
 void testComputeDistances()
 {
   printf("Computing distances between the minutiae of a template: ");
@@ -187,6 +158,36 @@ void testComputeDistances()
 
   T_free(&template);
   printf("ok\n");
+}
+
+void initTestLMTS(LMTS *lmts)
+{
+  lmts[0].nbMinutiae = 1;
+  lmts[1].nbMinutiae = 2;
+  lmts[2].nbMinutiae = 1;
+  for (int i = 0; i < 3; i++)
+  {
+    lmts[i].r = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
+    lmts[i].a = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
+    lmts[i].o = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
+  }
+
+
+  short r = 90; // (short)(128 * sqrtf(2) * (10/20.0));
+  lmts[0].r[0] = r;
+  lmts[1].r[0] = r;
+  lmts[1].r[1] = r;
+  lmts[2].r[0] = r;
+
+  lmts[0].a[0] = 32;
+  lmts[1].a[0] = 96;
+  lmts[1].a[1] = 224;
+  lmts[2].a[0] = 32;
+
+  lmts[0].o[0] = 32;
+  lmts[1].o[0] = 96;
+  lmts[1].o[1] = 96;
+  lmts[2].o[0] = 160;
 }
 
 void testLMTSbuildAll()
@@ -224,52 +225,143 @@ void testLMTSbuildAll()
   printf("ok\n");
 }
 
+void initTestLMTS2(LMTS *lmts1, LMTS *lmts2)
+{
+  lmts1->nbMinutiae = 2;
+  lmts2->nbMinutiae = 3;
+
+  lmts1->r = (unsigned char *) malloc(lmts1->nbMinutiae * sizeof(unsigned char));
+  lmts1->a = (unsigned char *) malloc(lmts1->nbMinutiae * sizeof(unsigned char));
+  lmts1->o = (unsigned char *) malloc(lmts1->nbMinutiae * sizeof(unsigned char));
+  lmts2->r = (unsigned char *) malloc(lmts2->nbMinutiae * sizeof(unsigned char));
+  lmts2->a = (unsigned char *) malloc(lmts2->nbMinutiae * sizeof(unsigned char));
+  lmts2->o = (unsigned char *) malloc(lmts2->nbMinutiae * sizeof(unsigned char));
+
+  lmts1->r[0] = 100;
+  lmts1->a[0] = 0;
+  lmts1->o[0] = 10;
+
+  lmts1->r[1] = 50;
+  lmts1->a[1] = 0;
+  lmts1->o[1] = 10;
+
+  lmts2->r[0] = 50;
+  lmts2->a[0] = 0;
+  lmts2->o[0] = 10;
+
+  lmts2->r[1] = 100;
+  lmts2->a[1] = 216;
+  lmts2->o[1] = 10;
+
+  lmts2->r[2] = 100;
+  lmts2->a[2] = 0;
+  lmts2->o[2] = 30;
+}
+
+void initTestPairs(Pair *pairs)
+{
+  pairs[0].m1 = 0; pairs[0].m2 = 0; pairs[0].sim = expf(-5);
+  pairs[1].m1 = 0; pairs[1].m2 = 1; pairs[1].sim = expf(-4);
+  pairs[2].m1 = 0; pairs[2].m2 = 2; pairs[2].sim = expf(-2);
+  pairs[3].m1 = 1; pairs[3].m2 = 0; pairs[3].sim = 1;
+  pairs[4].m1 = 1; pairs[4].m2 = 1; pairs[4].sim = expf(-9);
+  pairs[5].m1 = 1; pairs[5].m2 = 2; pairs[5].sim = expf(-7);
+}
+
+int initTestNbPairs()
+{
+  return 6;
+}
+
+float initExpectedScore()
+{
+  return 0.000152;
+}
+
+void initTestMTM(float *mtm)
+{
+  // p0  dR = -50 dA = 0   dO = 0
+  // p1  dR = 0   dA = 216 dO = 0
+  // p2  dR = 0   dA = 0   dO = 20
+  // p3  dR = 0   dA = 0   dO = 0
+  // p4  dR = 50  dA = 216 dO = 0
+  // p5  dR = 50  dA = 0   dO = 20
+
+  mtm[0 * 6 + 0] = expf(-5);
+  mtm[0 * 6 + 1] = 0; // 2 * expf(-9) but same m1
+  mtm[0 * 6 + 2] = 0; // 2 * expf(-7) but same m1
+  mtm[0 * 6 + 3] = 0; // 2 * expf(-5) but same m2
+  mtm[0 * 6 + 4] = 2 * expf(-14);
+  mtm[0 * 6 + 5] = 2 * expf(-12);
+  mtm[1 * 6 + 1] = expf(-4);
+  mtm[1 * 6 + 2] = 0; // 2 * expf(-6) but same m1
+  mtm[1 * 6 + 3] = 2 * expf(-4);
+  mtm[1 * 6 + 4] = 0; // 2 * expf(-9) but same m2
+  mtm[1 * 6 + 5] = 2 * expf(-11);
+  mtm[2 * 6 + 2] = expf(-2);
+  mtm[2 * 6 + 3] = 2 * expf(-2);
+  mtm[2 * 6 + 4] = 2 * expf(-11);
+  mtm[2 * 6 + 5] = 0; // 2 * expf(-5) but same m2
+  mtm[3 * 6 + 3] = 1;
+  mtm[3 * 6 + 4] = 0; // 2 * expf(-9) but same m1
+  mtm[3 * 6 + 5] = 0; // 2 * expf(-7) but same m2
+  mtm[4 * 6 + 4] = expf(-9);
+  mtm[4 * 6 + 5] = 0; // 2 * expf(-6) but same m1
+  mtm[5 * 6 + 5] = expf(-7);
+  for (int i = 0; i < 6; i++)
+    for (int j = 0; j < i; j++)
+      mtm[i * 6 + j] = mtm[j * 6 + i];
+   
+}
+
 void testPairBuildAll()
 {
   printf("Computing all pairs of LMTS between 2 templates: ");
 
   LMTS lmts[2];
-  lmts[0].nbMinutiae = 2;
-  lmts[1].nbMinutiae = 3;
-  for (int i = 0; i < 2; i++)
-  {
-    lmts[i].r = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
-    lmts[i].a = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
-    lmts[i].o = (unsigned char *) malloc(lmts[i].nbMinutiae * sizeof(unsigned char));
-  }
-
-  lmts[0].r[0] = 100;
-  lmts[0].a[0] = 0;
-  lmts[0].o[0] = 10;
-
-  lmts[0].r[1] = 20;
-  lmts[0].a[1] = 200;
-  lmts[0].o[1] = 250;
-
-  lmts[1].r[0] = 50;
-  lmts[1].a[0] = 0;
-  lmts[1].o[0] = 10;
-
-  lmts[1].r[1] = 100;
-  lmts[1].a[1] = 216;
-  lmts[1].o[1] = 10;
-
-  lmts[1].r[2] = 100;
-  lmts[1].a[2] = 0;
-  lmts[1].o[2] = 30;
+  initTestLMTS2(lmts, lmts+1);
 
   Pair pairs[lmts[0].nbMinutiae * lmts[1].nbMinutiae];
   int nbPairs;
 
   Pair_buildAll(pairs, &nbPairs, &lmts[0], &lmts[1], 0.1, 1e-4);
 
-  assert(nbPairs == 3);
-  assert(pairs[0].m1 == 0 && pairs[0].m2 == 0 && fabs(pairs[0].sim - expf(-5)) < EPS);
-  assert(pairs[1].m1 == 0 && pairs[1].m2 == 1 && fabs(pairs[1].sim - expf(-4)) < EPS);
-  assert(pairs[2].m1 == 0 && pairs[2].m2 == 2 && fabs(pairs[2].sim - expf(-2)) < EPS);
+  int expectedNbPairs = initTestNbPairs();
+  Pair expectedPairs[expectedNbPairs];
+  initTestPairs(expectedPairs);
+  assert(nbPairs == expectedNbPairs);
+  for (int i = 0; i < expectedNbPairs; i++)
+  {
+    assert(pairs[i].m1 == expectedPairs[i].m1);
+    assert(pairs[i].m2 == expectedPairs[i].m2);
+    assert(fabs(pairs[i].sim - expectedPairs[i].sim) < EPS);
+  }
+
+  LMTS_free(2, lmts);
 
   printf("ok\n");
 }
+
+void testMTMbuild()
+{
+  printf("Computing the mtm score of all pairs of LMTS between 2 templates: ");
+  LMTS lmts[2];
+  initTestLMTS2(lmts, lmts+1);
+
+  int nbPairs = initTestNbPairs();
+  Pair pairs[nbPairs];
+  initTestPairs(pairs);
+
+  float expectedMtm[nbPairs * nbPairs];
+  initTestMTM(expectedMtm);
+  float score = MTMscore(nbPairs, pairs, lmts, lmts+1, 0.1, 2, 1e-2, 100, lmts[0].nbMinutiae * lmts[1].nbMinutiae);
+  printf("%.6f\n", score);
+  assert(fabsf(score - initExpectedScore()) < EPS);
+  LMTS_free(2, lmts);
+
+  printf("ok\n");
+}
+
 
 int main(int argc, char** argv)
 {
@@ -280,5 +372,6 @@ int main(int argc, char** argv)
   testComputeDistances();
   testLMTSbuildAll();
   testPairBuildAll();
+  testMTMbuild();
   return EXIT_SUCCESS;
 }
