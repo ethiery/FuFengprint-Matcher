@@ -95,8 +95,9 @@ void removeMinutia(T *temp, int minutiaNo)
   temp->nbMinutiae--;
 }
 
-void selectClosest(T *t1, T *t2, int x, int y, int *select1, int *select2)
+void selectMinutia(int x, int y, T *t1, int *select1, T *t2, int *select2)
 {
+  // assert(t1 != NULL && t2 != NULL);
   T *t = t1;
   int *select = select1;
   if (x >= t1->width)
@@ -114,36 +115,68 @@ void selectClosest(T *t1, T *t2, int x, int y, int *select1, int *select2)
     *select = (d < minD) ? i : *select;
     minD = (d < minD) ? d : minD; 
   }
+
+  displayTemplates(t1, t2, *select1, *select2);
 }
+
+void confirm(int *nbPairs, int *pairs, T *t1, int *select1, T *t2, int *select2)
+{
+  if (*select1 != -1 && *select2 != -1)
+  {
+    pairs[2*(*nbPairs)] = *select1;
+    pairs[2*(*nbPairs) + 1] = *select2;
+    (*nbPairs)++;
+    removeMinutia(t1, *select1);
+    removeMinutia(t2, *select2);
+    *select1 = *select2 = -1;
+    displayTemplates(t1, t2, *select1, *select2);
+  }
+}
+
+void save(int nbPairs, int *pairs, const char *templateFile1, const char *templateFile2, const char *outputFile)
+{
+  FILE *f = fopen(outputFile, "w");
+  assert(f != NULL);
+
+  assert(fprintf(f, "%s\n%s\n%d\n", templateFile1, templateFile2, nbPairs) > 0);
+
+  for (int i = 0; i < nbPairs; i++)
+  {
+    assert(fprintf(f, "%d %d\n", pairs[2*i], pairs[2*i + 1]) > 0);
+  }
+  fclose(f);
+}
+
+
 
 
 int main(int argc, char **argv)
 {
-  if (argc != 3)
+  if (argc != 4 && argc != 3)
   {
-    printf("Usage: %s templateFile1 templateFil2\n", argv[0]);
+    printf("Usage: %s templateFile1 templateFile2 outputFile\n", argv[0]);
     return EXIT_FAILURE;
   }
 
   T temp1, temp2;
-  T_load(&temp1, argv[1]);
-  T_load(&temp2, argv[2]);
+  assert(T_load(&temp1, argv[1]) == 0);
+  assert(T_load(&temp2, argv[2]) == 0);
 
   SDL_Event event;
   initDisplay(&temp1, &temp2);
   atexit(destroyDisplay);
 
-  int select1 = -1;
-  int select2 = -1;
+  int select1 = -1, select2 = -1;
 
   int nbPairs = 0;
   int maxNbPairs = temp1.nbMinutiae < temp2.nbMinutiae ? temp1.nbMinutiae : temp2.nbMinutiae;
-  int pairs1[maxNbPairs], pairs2[maxNbPairs];
-  
+  int pairs[2*maxNbPairs];
+
   int stop = 0;
 
   while(!stop)
   {
+    fflush(stderr);
     SDL_WaitEvent(&event);
     switch(event.type)
     {
@@ -160,31 +193,20 @@ int main(int argc, char **argv)
           
           case SDLK_KP_ENTER:
           case SDLK_RETURN:
-            if (select1 != -1 && select2 != -1)
-            {
-              pairs1[nbPairs] = select1;
-              pairs2[nbPairs] = select2;
-              printf("New pair %d %d\n", pairs1[nbPairs], pairs2[nbPairs]);
-              nbPairs++;
-              removeMinutia(&temp1, select1);
-              removeMinutia(&temp2, select2);
-              select1 = select2 = -1;
-              displayTemplates(&temp1, &temp2, select1, select2);
-            }
+            confirm(&nbPairs, pairs, &temp1, &select1, &temp2, &select2);
             break;
         }
         break;
 
       case SDL_MOUSEBUTTONUP:
         if (event.button.button == SDL_BUTTON_LEFT)
-        {
-          selectClosest(&temp1, &temp2, event.button.x, event.button.y, &select1, &select2);
-          printf("Selected %d %d\n", select1, select2);
-          displayTemplates(&temp1, &temp2, select1, select2);
-        }
+          selectMinutia(event.button.x, event.button.y, &temp1, &select1, &temp2, &select2);
         break;
     }
   }
+
+  if (argc == 4)
+    save(nbPairs, pairs, argv[1], argv[2], argv[3]);
 
   T_free(&temp1);
   T_free(&temp2);
