@@ -14,6 +14,7 @@
 #define FG_COLOR 0, 0, 0, 255
 #define HL_COLOR 255, 0, 0, 255
 
+#define ZOOM 2
 
 // SDL2 handles
 SDL_Window *window = NULL;
@@ -22,18 +23,18 @@ SDL_Renderer *renderer = NULL;
 void drawMinutia(T *temp, int i, int x0, int y0, char r, char g, char b, char a)
 {
   double theta = temp->o[i] * TO_RAD;
-  int x1 = x0 + temp->x[i];
-  int y1 = y0 + temp->y[i];
-  int x2 = x1 + ceil(5 * cos(theta));
-  int y2 = y1 + ceil(5 * sin(theta));
+  int x1 = x0 + ZOOM * temp->x[i];
+  int y1 = y0 + ZOOM *temp->y[i];
+  int x2 = x1 + ceil(5 * ZOOM * cos(theta));
+  int y2 = y1 + ceil(5 * ZOOM * sin(theta));
   assert(lineRGBA(renderer, x1, y1, x2, y2, r, g, b, a) == 0);
-  assert(rectangleRGBA(renderer, x1-1, y1-1, x1+1, y1+1, r, g, b, a) == 0);
+  assert(rectangleRGBA(renderer, x1-ZOOM, y1-ZOOM, x1+ZOOM, y1+ZOOM, r, g, b, a) == 0);
 }
 
 void drawTemplate(T *temp, int x0, int y0, char r, char g, char b, char a)
 {
   // Draw frame
-  assert(rectangleRGBA(renderer, x0, y0, x0 + temp->width, y0 + temp->height, r, g, b, a) == 0);
+  assert(rectangleRGBA(renderer, x0, y0, x0 + ZOOM * temp->width, y0 + ZOOM * temp->height, r, g, b, a) == 0);
   // Draw minutiae
   for (int i = 0; i < temp->nbMinutiae; i++) drawMinutia(temp, i, x0, y0, r, g, b, a);
 }
@@ -44,13 +45,13 @@ void displayTemplates(T *t1, T *t2, int highlighted1, int highlighted2)
   assert(SDL_RenderClear(renderer) == 0);
 
   drawTemplate(t1, 0, 0, FG_COLOR);
-  drawTemplate(t2, t1->width, 0, FG_COLOR);
+  drawTemplate(t2, ZOOM * t1->width, 0, FG_COLOR);
 
   if (highlighted1 > -1)
     drawMinutia(t1, highlighted1, 0, 0, HL_COLOR);
 
   if (highlighted2 > -1)
-    drawMinutia(t2, highlighted2, t1->width, 0, HL_COLOR);
+    drawMinutia(t2, highlighted2, ZOOM * t1->width, 0, HL_COLOR);
 
   SDL_RenderPresent(renderer);
 }
@@ -58,8 +59,8 @@ void displayTemplates(T *t1, T *t2, int highlighted1, int highlighted2)
 
 void initDisplay(T *t1, T *t2)
 {
-  int width = t1->width + t2->width;
-  int height = (t1->height < t2->height) ? t2->height : t1->height;
+  int width = ZOOM * (t1->width + t2->width);
+  int height = ZOOM * ((t1->height < t2->height) ? t2->height : t1->height);
 
   // Initialize SDL
   assert(SDL_Init(SDL_INIT_VIDEO) == 0);
@@ -97,6 +98,8 @@ void removeMinutia(T *temp, int minutiaNo)
 
 void selectMinutia(int x, int y, T *t1, int *select1, T *t2, int *select2)
 {
+  x /= ZOOM;
+  y /= ZOOM;
   // assert(t1 != NULL && t2 != NULL);
   T *t = t1;
   int *select = select1;
@@ -193,6 +196,8 @@ int main(int argc, char **argv)
           
           case SDLK_KP_ENTER:
           case SDLK_RETURN:
+          case SDLK_KP_SPACE:
+          case SDLK_c:
             confirm(&nbPairs, pairs, &temp1, &select1, &temp2, &select2);
             break;
         }
